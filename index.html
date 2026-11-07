@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NusaMap</title>
+  <meta name="description" content="Peta interaktif budaya 38 provinsi Indonesia untuk siswa sekolah dasar.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#fff"/><path d="M4 24a20 20 0 0 1 40 0z" fill="#E53935"/><circle cx="24" cy="24" r="22" fill="none" stroke="#fff" stroke-width="3"/></svg>
+      </div>
+      <div>
+        <h1>NusaMap</h1>
+        <p class="tagline">Ayo jelajahi budaya 38 provinsi Indonesia!</p>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Pilih kegiatan">
+      <button class="tab active" role="tab" data-mode="jelajah" aria-selected="true"><span aria-hidden="true">🗺️</span> Jelajah</button>
+      <button class="tab" role="tab" data-mode="kuis" aria-selected="false"><span aria-hidden="true">❓</span> Kuis</button>
+      <button class="tab" role="tab" data-mode="tebak" aria-selected="false"><span aria-hidden="true">📍</span> Tebak Lokasi</button>
+    </nav>
+
+    <div class="progress" title="Provinsi yang sudah kamu buka">
+      <span aria-hidden="true">⭐</span>
+      <span><b id="visitedCount">0</b>/38<span class="long"> dijelajahi</span></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ JELAJAH & TEBAK: peta ============ -->
+    <section id="mapView" class="map-view">
+      <div class="toolbar">
+        <div class="chips" id="regionChips" role="group" aria-label="Pilih pulau"></div>
+        <div class="search">
+          <input id="searchInput" type="search" placeholder="Cari provinsi…" autocomplete="off" aria-label="Cari provinsi">
+          <ul id="searchList" class="search-list" role="listbox" hidden></ul>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="map-card" id="mapCard">
+          <svg id="map" viewBox="0 0 940 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Peta provinsi Indonesia">
+            <defs>
+              <pattern id="waves" width="40" height="16" patternUnits="userSpaceOnUse">
+                <path d="M0 8 q10 -6 20 0 t20 0" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
+              </pattern>
+              <filter id="lift" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#0b3d63" flood-opacity=".35"/>
+              </filter>
+            </defs>
+            <rect id="sea" x="-2000" y="-2000" width="5000" height="5000" fill="url(#waves)"/>
+            <g id="seaLabels" class="sea-labels" aria-hidden="true">
+              <text x="200" y="330">Samudra Hindia</text>
+              <text x="760" y="60">Samudra Pasifik</text>
+              <text x="330" y="232">Laut Jawa</text>
+              <text x="350" y="26">Laut Cina Selatan</text>
+              <text x="655" y="248">Laut Banda</text>
+              <text x="540" y="60">Laut Sulawesi</text>
+              <text x="800" y="318">Laut Arafura</text>
+            </g>
+            <g id="provinces"></g>
+            <g id="markers"></g>
+            <g id="labels" aria-hidden="true"></g>
+          </svg>
+
+          <div class="map-controls">
+            <button id="zoomIn" class="round-btn zoom-btn" title="Perbesar" aria-label="Perbesar peta">+</button>
+            <button id="zoomOut" class="round-btn zoom-btn" title="Perkecil" aria-label="Perkecil peta">−</button>
+            <button id="resetZoom" class="round-btn" title="Lihat seluruh Indonesia" aria-label="Lihat seluruh Indonesia">🌏</button>
+            <button id="randomBtn" class="round-btn" title="Provinsi acak" aria-label="Buka provinsi acak">🎲</button>
+          </div>
+          <div class="compass" aria-hidden="true">
+            <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="27" fill="#fff" opacity=".85"/><path d="M30 6 L36 30 L30 26 L24 30Z" fill="#E53935"/><path d="M30 54 L24 30 L30 34 L36 30Z" fill="#455a64"/><text x="30" y="17" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">U</text></svg>
+          </div>
+          <div id="tooltip" class="tooltip" hidden></div>
+          <p class="hint" id="mapHint">👆 Klik provinsi untuk mengenalnya · 🔍 Scroll atau tombol + untuk zoom</p>
+        </div>
+
+        <!-- Panel info provinsi -->
+        <aside id="panel" class="panel" hidden aria-live="polite"></aside>
+
+        <!-- Panel game Tebak Lokasi -->
+        <aside id="tebakPanel" class="panel tebak-panel" hidden></aside>
+      </div>
+    </section>
+
+    <!-- ============ KUIS ============ -->
+    <section id="quizView" class="quiz-view" hidden>
+      <div class="quiz-card" id="quizCard"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Dibuat oleh Kelompok 1 — Civics O, Universitas Multimedia Nusantara</p>
+    <p class="small">Data batas wilayah: <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces" target="_blank" rel="noopener">Indonesia GeoJSON &amp; TopoJSON Maps (38 Provinces)</a> oleh Deny Herianto, lisensi <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (disederhanakan). Foto: Wikimedia Commons — <button class="link-btn" id="creditsBtn">lihat sumber foto</button>.</p>
+  </footer>
+
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+  <div id="lightbox" class="lightbox" hidden></div>
+  <div id="creditsDialog" class="lightbox" hidden>
+    <div class="credits-inner" role="dialog" aria-modal="true" aria-labelledby="creditsTitle">
+      <div class="credits-head"><h3 id="creditsTitle">📸 Sumber Foto</h3><button class="icon-btn" id="creditsClose" aria-label="Tutup">✕</button></div>
+      <p class="small-note">Semua foto berasal dari Wikimedia Commons dan dipakai sesuai lisensinya masing-masing.</p>
+      <div id="creditsBody"></div>
+    </div>
+  </div>
+
+  <script src="data/map-paths.js"></script>
+  <script src="data/provinces.js"></script>
+  <script src="data/images.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
