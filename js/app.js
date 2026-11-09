@@ -138,14 +138,26 @@
   // Zoom halus (animasi viewBox)
   // ---------------------------------------------------------------
   let zoomAnim = null;
+  // Perbandingan lebar:tinggi kotak peta di layar (di HP kotaknya lebih tinggi)
+  function boxAR() {
+    const r = svg.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 ? r.width / r.height : FULL_VIEW[2] / FULL_VIEW[3];
+  }
+  // Tampilan awal: di kotak yang tinggi (HP), sedikit diperbesar supaya peta memenuhi kotak
+  function homeView() {
+    const ar = boxAR(), full = FULL_VIEW[2] / FULL_VIEW[3];
+    if (ar >= full) return fitBox([0, 0, 940, 360], 0, 0);
+    const h = 360 / 0.8, w = h * ar; // pulau-pulau mengisi ±80% tinggi kotak
+    return [470 - w / 2, 180 - h / 2, w, h];
+  }
   function fitBox(b, padRatio = 0.25, minW = 110) {
     let [x1, y1, x2, y2] = b;
     let w = x2 - x1, h = y2 - y1;
     const cx = x1 + w / 2, cy = y1 + h / 2;
     w = Math.max(w * (1 + padRatio * 2), minW);
-    h = Math.max(h * (1 + padRatio * 2), minW * FULL_VIEW[3] / FULL_VIEW[2]);
+    const ar = boxAR();
+    h = Math.max(h * (1 + padRatio * 2), minW / ar);
     // Sesuaikan dengan perbandingan ukuran kotak peta
-    const ar = FULL_VIEW[2] / FULL_VIEW[3];
     if (w / h > ar) h = w / ar; else w = h * ar;
     return [cx - w / 2, cy - h / 2, w, h];
   }
@@ -164,22 +176,20 @@
     };
     zoomAnim = requestAnimationFrame(step);
   }
-  const zoomFull = () => zoomTo(fitBox([0, 0, 940, 360], 0, 0));
+  const zoomFull = () => zoomTo(homeView());
 
   // ---------------------------------------------------------------
   // Zoom bebas: roda mouse, tombol + / −, geser (drag), dan cubit (pinch)
   // ---------------------------------------------------------------
   const MIN_W = 45;   // paling dekat (lebar tampilan dalam satuan peta)
   const MAX_W = 940;  // paling jauh = seluruh Indonesia
-  const AR = FULL_VIEW[2] / FULL_VIEW[3];
-
   function clampView([x, y, w]) {
     w = Math.min(MAX_W, Math.max(MIN_W, w));
-    const h = w / AR;
+    const h = w / boxAR();
     // Titik tengah tampilan tidak boleh keluar dari peta
     const cx = Math.min(940, Math.max(0, x + w / 2));
     const cy = Math.min(360, Math.max(0, y + h / 2));
-    if (w >= MAX_W) return [0, 0, MAX_W, MAX_W / AR];
+    if (w >= MAX_W) return [0, 180 - h / 2, MAX_W, h];
     return [cx - w / 2, cy - h / 2, w, h];
   }
   function setView(v) {
@@ -199,7 +209,7 @@
     const [x, y, w, h] = state.view;
     const nw = Math.min(MAX_W, Math.max(MIN_W, w / factor));
     const k = nw / w;
-    const target = clampView([px - (px - x) * k, py - (py - y) * k, nw, nw / AR]);
+    const target = clampView([px - (px - x) * k, py - (py - y) * k, nw]);
     if (animate) zoomTo(target, 300); else setView(target);
   }
   function zoomButton(factor) {
@@ -243,7 +253,7 @@
       // Titik tengah kedua jari tetap di bawah jari
       const r = svg.getBoundingClientRect();
       const fx = ((a.x + b.x) / 2 - r.left) / r.width, fy = ((a.y + b.y) / 2 - r.top) / r.height;
-      setView([pinch.mid[0] - fx * nw, pinch.mid[1] - fy * nw / AR, nw]);
+      setView([pinch.mid[0] - fx * nw, pinch.mid[1] - fy * nw / boxAR(), nw]);
       return;
     }
     if (!drag || drag.id !== e.pointerId) return;
@@ -894,12 +904,16 @@
   // ---------------------------------------------------------------
   // Mulai
   // ---------------------------------------------------------------
-  zoomTo(fitBox([0, 0, 940, 360], 0, 0), 1);
-  window.addEventListener("resize", () => {
+  zoomTo(homeView(), 1);
+  // Atur ulang tampilan setiap kali ukuran kotak peta berubah
+  const refit = () => {
+    if (!svg.getBoundingClientRect().width) return;
     if (state.mode === "tebak" || !state.selected) {
       if (state.region && state.mode !== "tebak") zoomTo(fitBox(unionBox(PROVS.filter(q => q.wilayah === state.region)), 0.08), 1);
-      else zoomTo(fitBox([0, 0, 940, 360], 0, 0), 1);
+      else zoomTo(homeView(), 1);
     } else zoomTo(fitBox(state.selected.geo.b, 0.35, 200), 1);
-  });
+  };
+  if ("ResizeObserver" in window) new ResizeObserver(refit).observe(svg);
+  else window.addEventListener("resize", refit);
   if ("speechSynthesis" in window) speechSynthesis.getVoices(); // memuat daftar suara lebih awal
 })();

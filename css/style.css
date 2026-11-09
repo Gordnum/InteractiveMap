@@ -276,6 +276,8 @@ main { flex: 1; padding: 16px 20px 8px; width: 100%; max-width: 1500px; margin: 
   .chip { padding: 5px 10px; font-size: .8rem; }
   .hint { display: none; }
   .compass { display: none; }
+  /* Peta lebih tinggi di HP supaya memenuhi layar */
+  #map { aspect-ratio: auto; height: clamp(260px, 42vh, 440px); }
   .round-btn { width: 38px; height: 38px; font-size: 1.1rem; }
   .feature-grid { grid-template-columns: 1fr; }
   .options { grid-template-columns: 1fr; }
